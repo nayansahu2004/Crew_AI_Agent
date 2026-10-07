@@ -1,11 +1,55 @@
-# Python-generated files
+# --- Secrets ---
+.env
+.env.*
+!.env.example
+
+# --- Python-generated files ---
 __pycache__/
 *.py[oc]
+*.egg-info/
 build/
 dist/
 wheels/
-*.egg-info
 
-# Virtual environments
-.venv
-.env
+# --- Virtual environments ---
+.venv/
+venv/
+
+# --- Test / Tool caches ---
+.pytest_cache/
+.coverage
+.mypy_cache/
+.ruff_cache/
+
+# --- uv ---
+# uv.lock is intentionally NOT ignored.
+# Commit it for reproducible installs.
+
+# --- Backend-generated artifacts ---
+# CrewAI run artifacts and application logs.
+backend/outputs/*
+!backend/outputs/.gitkeep
+
+backend/logs/*
+!backend/logs/.gitkeep
+
+# --- Logs ---
+*.log
+claude logs.md
+
+# --- Frontend (Node/Vite) ---
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+
+# --- Editor / OS ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# --- CrewAI local config / cache ---
+# Machine-specific CrewAI configuration.
+.crewai/

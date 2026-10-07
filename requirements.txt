@@ -1,0 +1,36 @@
+# File path: requirements.txt
+
+# --- Web framework ---
+fastapi>=0.115
+uvicorn[standard]>=0.32
+
+# --- Config & validation ---
+pydantic>=2.9
+pydantic-settings>=2.6
+
+# --- MongoDB ---
+motor>=3.6
+pymongo>=4.9
+
+# --- Auth ---
+# [crypto] is required for ES256/RS256 Supabase JWT verification
+PyJWT[crypto]>=2.9
+
+# --- HTTP ---
+requests>=2.32
+
+# --- Environment variables ---
+python-dotenv>=1.0
+
+# --- AI / CrewAI ---
+crewai>=1.15
+crewai-tools>=0.1
+litellm>=1.52
+
+# --- Google Gemini ---
+google-genai
+
+# --- Web scraping / research ---
+beautifulsoup4
+firecrawl-py
+tavily-python
