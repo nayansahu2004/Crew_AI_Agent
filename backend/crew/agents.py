@@ -34,7 +34,7 @@ from crewai import Agent
 
 logger = logging.getLogger(__name__)
 
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini/gemini-3.8-flash")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini/gemini-3.6-flash")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "ollama/qwen2.5:3b-instruct")
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 

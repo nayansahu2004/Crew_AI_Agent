@@ -1,0 +1,37 @@
+# File path: render.yaml
+#
+# Optional infra-as-code for Render -- lets you version the service
+# config alongside the code instead of only configuring it by hand in
+# the dashboard. If you prefer the dashboard, this file is informational
+# only; Render auto-detects it if present at the repo root.
+
+services:
+  - type: web
+    name: crew-ai-influencer-api
+    runtime: python
+    plan: starter   # "free" works too, but see the sleep/background-task
+                     # note below before relying on it for real runs
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DATABASE
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: SERPER_API_KEY
+        sync: false
+      - key: FIRECRAWL_API_KEY
+        sync: false
+      - key: TAVILY_API_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      # OLLAMA_BASE_URL intentionally omitted -- see note below, there
+      # is no local Ollama on Render by default.

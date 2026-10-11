@@ -42,8 +42,7 @@ class Settings(BaseSettings):
     ollama_base_url: str = "http://localhost:11434"
 
     # --- CORS ---
-    cors_origins: str = "http://localhost:3000"
-
+    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

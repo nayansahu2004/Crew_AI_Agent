@@ -17,6 +17,13 @@ The token's own `alg` header is only used to pick which branch runs. Each
 branch then pins an explicit allow-list of algorithms, so a forged token
 can't downgrade verification (e.g. to "none").
 
+CLOCK SKEW: Supabase stamps tokens (iat/exp) with ITS clock, and this
+server checks them against the local clock. If the local clock runs even a
+few seconds behind, a freshly issued token looks like it comes from the
+future and fails with "The token is not yet valid (iat)". A small leeway
+absorbs that. Fixing the machine's clock (Windows: Settings -> Time &
+language -> Date & time -> Sync now) is still the real cure.
+
 Requires: pip install "pyjwt[crypto]"   (the [crypto] extra is what makes
 ES256/RS256 verification work.)
 """
@@ -24,22 +31,24 @@ ES256/RS256 verification work.)
 import logging
 
 import jwt
-from fastapi import Header, HTTPException, status, Security
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi import Header, HTTPException, status
 from jwt import PyJWKClient
 from pydantic import BaseModel
 from starlette.concurrency import run_in_threadpool
 
 from backend.core.config import settings
 
-
 logger = logging.getLogger(__name__)
+
+# Tolerated difference between Supabase's clock and this machine's, in
+# seconds. Applies to iat/nbf/exp, so expired tokens are also honoured for
+# up to this long -- negligible against a 1-hour token lifetime.
+CLOCK_SKEW_LEEWAY_SECONDS = 60
 
 _JWKS_URL = f"{settings.supabase_url.rstrip('/')}/auth/v1/.well-known/jwks.json"
 # Doesn't touch the network until the first asymmetric token is verified;
 # fetched keys are cached afterwards.
 _jwks_client = PyJWKClient(_JWKS_URL, cache_keys=True)
-bearer_scheme = HTTPBearer(auto_error=False)
 
 
 class AuthenticatedUser(BaseModel):
@@ -88,6 +97,7 @@ def _decode_token(token: str) -> dict:
             settings.supabase_jwt_secret,
             algorithms=["HS256"],
             audience="authenticated",  # Supabase's default audience claim
+            leeway=CLOCK_SKEW_LEEWAY_SECONDS,
         )
 
     signing_key = _jwks_client.get_signing_key_from_jwt(token)
@@ -96,11 +106,12 @@ def _decode_token(token: str) -> dict:
         signing_key.key,
         algorithms=["ES256", "RS256"],
         audience="authenticated",
+        leeway=CLOCK_SKEW_LEEWAY_SECONDS,
     )
 
+
 async def get_current_user(
-    authorization: str | None = Header(default=None, include_in_schema=False),
-    _: HTTPAuthorizationCredentials | None = Security(bearer_scheme),
+    authorization: str | None = Header(default=None),
 ) -> AuthenticatedUser:
     """
     FastAPI dependency for protected routes:

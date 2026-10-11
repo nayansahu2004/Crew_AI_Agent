@@ -1,0 +1,194 @@
+/* File path: frontend/src/styles/index.css */
+
+:root {
+  --paper: #f6f2ec;
+  --ink: #1f1b16;
+  --ink-soft: #55504a;
+  --berry: #a13d63;
+  --berry-deep: #7f2e4e;
+  --moss: #6b7a4f;
+  --rule: #d9d2c7;
+  --paper-raised: #efe9e0;
+
+  --font-display: "Fraunces", Georgia, serif;
+  --font-body: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+
+  --space-1: 0.5rem;
+  --space-2: 0.75rem;
+  --space-3: 1.25rem;
+  --space-4: 2rem;
+  --space-5: 3.25rem;
+
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  line-height: 1.15;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+h1 {
+  font-size: 2.1rem;
+}
+
+h2 {
+  font-size: 1.5rem;
+}
+
+h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+p {
+  margin: 0;
+  max-width: 62ch;
+}
+
+a {
+  color: var(--berry);
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+button:focus-visible,
+input:focus-visible,
+a:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--berry);
+  outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------------
+   Shared primitives -- used across pages so new pages stay consistent
+   without needing a component library.
+   --------------------------------------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0.6rem 1.1rem;
+  border-radius: 2px;
+  font-weight: 500;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.btn:hover {
+  background: var(--berry-deep);
+  border-color: var(--berry-deep);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--rule);
+}
+
+.btn-secondary:hover {
+  background: var(--paper-raised);
+  border-color: var(--ink-soft);
+  color: var(--ink);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: var(--space-3);
+}
+
+.field label {
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+
+.field input,
+.field select,
+.field textarea {
+  border: 1px solid var(--rule);
+  background: #fff;
+  padding: 0.55rem 0.7rem;
+  border-radius: 2px;
+}
+
+.field textarea {
+  resize: vertical;
+  min-height: 5rem;
+}
+
+.hairline {
+  border: none;
+  border-top: 1px solid var(--rule);
+  margin: var(--space-4) 0;
+}
+
+.error-text {
+  color: var(--berry-deep);
+  font-size: 0.88rem;
+}
+
+.muted {
+  color: var(--ink-soft);
+}
+
+.status-pill {
+  display: inline-block;
+  font-size: 0.78rem;
+  padding: 0.15rem 0.55rem;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  color: var(--ink-soft);
+}
+
+.status-pill[data-tone="active"] {
+  border-color: var(--moss);
+  color: var(--moss);
+}
+
+.status-pill[data-tone="pending"] {
+  border-color: var(--berry);
+  color: var(--berry);
+}

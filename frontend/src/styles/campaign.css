@@ -1,0 +1,106 @@
+/* File path: frontend/src/styles/campaign.css
+   Styles for the run-progress strip and influencer entries. */
+
+.run-steps {
+  display: flex;
+  gap: var(--space-4);
+  list-style: none;
+  margin: 0 0 var(--space-3);
+  padding: 0;
+}
+
+.run-step {
+  min-width: 7rem;
+  padding-top: 0.6rem;
+  border-top: 2px solid var(--rule);
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+}
+
+.run-step[data-state="done"] {
+  border-top-color: var(--moss);
+  color: var(--ink);
+}
+
+.run-step[data-state="active"] {
+  border-top-color: var(--berry);
+  color: var(--ink);
+}
+
+.run-step[data-state="failed"] {
+  border-top-color: var(--berry-deep);
+  color: var(--berry-deep);
+}
+
+.run-step-num {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.influencer-entry {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--rule);
+}
+
+.influencer-handle {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 500;
+}
+
+.influencer-score {
+  text-align: right;
+  font-family: var(--font-display);
+  font-size: 2.2rem;
+  line-height: 1;
+}
+
+.influencer-score small {
+  display: block;
+  margin-top: 0.3rem;
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+}
+
+.entry-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.link-button {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--berry);
+  font-size: 0.88rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.link-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.email-draft {
+  grid-column: 1 / -1;
+  padding: var(--space-3);
+  background: var(--paper-raised);
+  border-left: 2px solid var(--berry);
+}
+
+.email-draft pre {
+  margin: var(--space-2) 0 0;
+  white-space: pre-wrap;
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+}

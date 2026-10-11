@@ -1,3 +1,4 @@
+# File path: backend/models/influencer.py
 """Shape of a document in the `influencers` collection."""
 
 from datetime import datetime
@@ -18,8 +19,10 @@ class InfluencerModel(BaseModel):
     email: str | None = None
     bio: str | None = None
     discovery_source: str | None = None
-    review_score: float | None = None
-    review_status: str = "pending"        # pending | reviewed
-    outreach_status: str = "not_started"  # not_started | sent | replied
+    review_score: float | None = None          # 0-10, normalized on write
+    review_reasoning: str | None = None
+    review_status: str = "pending"             # pending | reviewed
+    outreach_status: str = "not_started"       # not_started | drafted | sent | replied
+    email_draft: dict[str, str | None] | None = None   # {"subject", "body"}
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
