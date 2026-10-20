@@ -10,7 +10,7 @@ export function Contact() {
   return (
     <PublicLayout>
       <Seo
-        title={`Contact ${owner.name} | Crew`}
+        title={`Contact ${owner.name} | ${siteConfig.name}`}
         description={`Get in touch with ${owner.name}, ${owner.title} at ${owner.company}, about Crew: more searches, questions or feedback.`}
         path="/contact"
       />

@@ -8,7 +8,8 @@
 const rawFreeSearches = import.meta.env.VITE_FREE_SEARCHES;
 
 export const siteConfig = {
-  name: "Crew",
+  name: "Crew",                          // short name: the header wordmark
+  fullName: "Crew - Search influencers for Advertisement", // titles, link previews, search engines
   // The public address of the deployed site, e.g. https://crew.example.com
   // (no trailing slash). Used for canonical links; empty during development.
   siteUrl: (import.meta.env.VITE_SITE_URL || "").replace(/\/$/, ""),

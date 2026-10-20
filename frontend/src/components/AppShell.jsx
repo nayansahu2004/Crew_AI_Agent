@@ -10,7 +10,7 @@ import { useAuth } from "../context/AuthContext";
 import { useGmailStatus } from "../hooks/useGmailStatus";
 import { GmailPromptModal } from "./GmailPromptModal";
 import { Seo } from "./Seo";
-import { searchesLabel } from "../lib/siteConfig";
+import { searchesLabel, siteConfig } from "../lib/siteConfig";
 import { OnboardingModal } from "./OnboardingModal";
 
 // localStorage can throw (private browsing, blocked storage) -- never let
@@ -53,7 +53,7 @@ export function AppShell() {
 
   return (
     <div style={{ display: "flex", minHeight: "100%" }}>
-      <Seo title="Crew" noindex />
+      <Seo title={siteConfig.name} noindex />
       <aside
         style={{
           width: "15rem",

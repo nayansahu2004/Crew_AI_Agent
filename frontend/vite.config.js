@@ -5,7 +5,8 @@ import react from "@vitejs/plugin-react";
 // Who runs the site, for search engines. This file runs in Node and can't
 // import src/lib/siteConfig.js, so keep these in step with it.
 const SITE = {
-  name: "Crew",
+  name: "Crew - Search influencers for Advertisement",
+  alternateName: "Crew",
   description:
     "Find Instagram influencers for your campaign, score them against your brief, and draft outreach emails to send from your Gmail.",
   ownerName: "Nayan Kumar Sahu",
@@ -30,10 +31,11 @@ function seoFiles(siteUrl) {
       const structuredData = JSON.stringify({
         "@context": "https://schema.org",
         "@graph": [
-          { "@type": "WebSite", name: SITE.name, url: `${siteUrl}/` },
+          { "@type": "WebSite", name: SITE.name, alternateName: SITE.alternateName, url: `${siteUrl}/` },
           {
             "@type": "SoftwareApplication",
             name: SITE.name,
+            alternateName: SITE.alternateName,
             url: `${siteUrl}/`,
             applicationCategory: "BusinessApplication",
             operatingSystem: "Web",

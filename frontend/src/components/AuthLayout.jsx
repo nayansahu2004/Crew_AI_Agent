@@ -6,11 +6,12 @@
 
 import { Link } from "react-router-dom";
 import { Seo } from "./Seo";
+import { siteConfig } from "../lib/siteConfig";
 
 export function AuthLayout({ title, children, footer }) {
   return (
     <>
-    <Seo title={`${title} | Crew`} noindex />
+    <Seo title={`${title} | ${siteConfig.name}`} noindex />
     <div
       style={{
         minHeight: "100%",

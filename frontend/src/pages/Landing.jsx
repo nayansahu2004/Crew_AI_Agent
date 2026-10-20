@@ -50,7 +50,7 @@ export function Landing() {
   return (
     <PublicLayout>
       <Seo
-        title={`${siteConfig.fullName} | Influencer Outreach Tool`}
+        title={`${siteConfig.fullName} | Outreach Tool`}
         description={`Find Instagram influencers for your campaign, score them against your brief, and draft outreach emails to send from your Gmail. ${searchesLabel(freeSearches)} to start.`}
         path="/"
       />

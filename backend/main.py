@@ -72,7 +72,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Crew - Search Influencers API",
+    title="Crew - Search influencers for Advertisement API",
     version="0.1.0",
     lifespan=lifespan,
 )
