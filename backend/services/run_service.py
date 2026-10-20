@@ -25,7 +25,7 @@ def _to_object_id(run_id: str) -> ObjectId:
 
 
 async def create_run(
-    db: AsyncIOMotorDatabase, user_id: str, campaign_id: str
+    db: AsyncIOMotorDatabase, user_id: str, campaign_id: str, credit_charged: bool = False
 ) -> dict:
     """Creates the initial workflow_run document in `queued` status.
     Does NOT start the CrewAI workflow itself -- the caller (the route)
@@ -39,6 +39,8 @@ async def create_run(
         "started_at": None,
         "completed_at": None,
         "error": None,
+        "credit_charged": credit_charged,
+        "credit_refunded": False,
         "result_summary": {},
         "created_at": datetime.now(UTC),
     }

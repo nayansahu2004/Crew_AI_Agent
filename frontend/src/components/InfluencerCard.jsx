@@ -2,12 +2,16 @@
 //
 // One discovered creator, rendered as an index entry: handle and
 // summary on the left, review score on the right, actions underneath.
-// The outreach email draft expands inline; "Mark as sent" is a manual
-// step because this system only ever drafts emails -- it never sends.
+//
+// Email flow: add the creator's address -> "Save to Gmail drafts" (review
+// and edit it in Gmail) or "Send email" (asks to confirm first). Nothing
+// is ever sent without the user pressing the confirm button for that one
+// creator. "Mark as sent" remains for emails sent outside the app.
 
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { api } from "../lib/apiClient";
-import { formatFollowers, normalizeScore } from "../lib/format";
+import { formatFollowers, normalizeScore, parseUtc } from "../lib/format";
 import "../styles/campaign.css";
 
 const OUTREACH_LABELS = {
@@ -23,16 +27,43 @@ function outreachTone(status) {
   return undefined;
 }
 
-export function InfluencerCard({ influencer, onUpdated }) {
+function formatDate(value) {
+  const date = parseUtc(value);
+  return date
+    ? date.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })
+    : null;
+}
+
+export function InfluencerCard({ influencer, onUpdated, gmail }) {
   const [showDraft, setShowDraft] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState(null); // "sent-mark" | "email" | "draft" | "send"
   const [actionError, setActionError] = useState(null);
+  const [editingEmail, setEditingEmail] = useState(false);
+  const [emailInput, setEmailInput] = useState("");
+  const [confirmSend, setConfirmSend] = useState(false);
 
   const draft = influencer.email_draft;
   const hasDraft = Boolean(draft && (draft.subject || draft.body));
   const score = normalizeScore(influencer.review_score);
   const handle = (influencer.username || "").replace(/^@/, "");
+  const isSent = influencer.outreach_status === "sent" || influencer.outreach_status === "replied";
+  const sentOn = formatDate(influencer.gmail?.sent_at);
+
+  // Runs one request, keeping the busy flag and any error message tidy.
+  async function run(name, request, onDone) {
+    setBusy(name);
+    setActionError(null);
+    try {
+      const updated = await request();
+      onUpdated(updated);
+      onDone?.();
+    } catch (err) {
+      setActionError(err.message);
+    } finally {
+      setBusy(null);
+    }
+  }
 
   async function copyDraft() {
     try {
@@ -46,20 +77,31 @@ export function InfluencerCard({ influencer, onUpdated }) {
     }
   }
 
-  async function markSent() {
-    setBusy(true);
-    setActionError(null);
-    try {
-      const updated = await api.patch(`/api/influencers/${influencer.id}`, {
-        outreach_status: "sent",
-      });
-      onUpdated(updated);
-    } catch (err) {
-      setActionError(err.message);
-    } finally {
-      setBusy(false);
-    }
+  const markSent = () =>
+    run("sent-mark", () =>
+      api.patch(`/api/influencers/${influencer.id}`, { outreach_status: "sent" })
+    );
+
+  function saveEmail(e) {
+    e.preventDefault();
+    run(
+      "email",
+      () => api.patch(`/api/influencers/${influencer.id}`, { email: emailInput }),
+      () => setEditingEmail(false)
+    );
   }
+
+  const saveGmailDraft = () =>
+    run("draft", () => api.post(`/api/influencers/${influencer.id}/gmail/draft`));
+
+  const sendEmail = () =>
+    run(
+      "send",
+      () => api.post(`/api/influencers/${influencer.id}/gmail/send`),
+      () => setConfirmSend(false)
+    );
+
+  const isEditingRecipient = editingEmail || !influencer.email;
 
   return (
     <li className="influencer-entry">
@@ -68,7 +110,9 @@ export function InfluencerCard({ influencer, onUpdated }) {
         <p className="muted" style={{ fontSize: "0.88rem", marginTop: "0.25rem" }}>
           {[
             influencer.username ? influencer.name : null,
-            `${formatFollowers(influencer.followers)} followers`,
+            influencer.followers == null
+              ? "Followers not found"
+              : `${formatFollowers(influencer.followers)} followers`,
             influencer.category.join(", ") || null,
             influencer.location,
           ]
@@ -105,14 +149,149 @@ export function InfluencerCard({ influencer, onUpdated }) {
           )}
 
           {influencer.outreach_status === "drafted" && (
-            <button className="link-button" onClick={markSent} disabled={busy}>
-              {busy ? "Saving…" : "Mark as sent"}
+            <button
+              className="link-button"
+              onClick={markSent}
+              disabled={busy === "sent-mark"}
+              title="Use this if you sent the email yourself, outside the app"
+            >
+              {busy === "sent-mark" ? "Saving…" : "Mark as sent"}
             </button>
           )}
         </div>
 
+        {hasDraft && (
+          <div style={{ marginTop: "var(--space-3)" }}>
+            {isSent ? (
+              <p className="muted" style={{ fontSize: "0.88rem" }}>
+                Sent{influencer.email ? ` to ${influencer.email}` : ""}
+                {influencer.gmail?.sent_from ? ` from ${influencer.gmail.sent_from}` : ""}
+                {sentOn ? ` on ${sentOn}` : ""}.
+              </p>
+            ) : isEditingRecipient ? (
+              <form
+                onSubmit={saveEmail}
+                style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", flexWrap: "wrap" }}
+              >
+                <input
+                  type="email"
+                  required
+                  aria-label="Creator's email address"
+                  placeholder="creator@example.com"
+                  value={emailInput}
+                  onChange={(e) => setEmailInput(e.target.value)}
+                  style={{
+                    border: "1px solid var(--rule)",
+                    background: "#fff",
+                    padding: "0.45rem 0.6rem",
+                    borderRadius: "2px",
+                    minWidth: "15rem",
+                  }}
+                />
+                <button className="btn btn-secondary" type="submit" disabled={busy === "email"}>
+                  {busy === "email" ? "Saving…" : "Save email"}
+                </button>
+                {influencer.email && (
+                  <button type="button" className="link-button" onClick={() => setEditingEmail(false)}>
+                    Cancel
+                  </button>
+                )}
+                {!influencer.email && (
+                  <span className="muted" style={{ fontSize: "0.82rem", flexBasis: "100%" }}>
+                    Add the creator's email address to send this. We find handles, not addresses.
+                  </span>
+                )}
+              </form>
+            ) : (
+              <p className="muted" style={{ fontSize: "0.88rem" }}>
+                To: {influencer.email}{" "}
+                <button
+                  className="link-button"
+                  onClick={() => {
+                    setEmailInput(influencer.email);
+                    setEditingEmail(true);
+                  }}
+                >
+                  Change
+                </button>
+              </p>
+            )}
+
+            {!isSent && !isEditingRecipient && gmail && (
+              <>
+                {!gmail.configured && (
+                  <p className="muted" style={{ fontSize: "0.82rem", marginTop: "var(--space-2)" }}>
+                    Sending isn't available: Gmail isn't set up on this server.
+                  </p>
+                )}
+
+                {gmail.configured && !gmail.connected && (
+                  <p className="muted" style={{ fontSize: "0.88rem", marginTop: "var(--space-2)" }}>
+                    <Link to="/settings">
+                      {gmail.needs_reconnect ? "Reconnect Gmail" : "Connect Gmail"}
+                    </Link>{" "}
+                    to save drafts and send from this app.
+                  </p>
+                )}
+
+                {gmail.connected && !confirmSend && (
+                  <div className="entry-actions">
+                    <button className="btn btn-secondary" onClick={saveGmailDraft} disabled={busy !== null}>
+                      {busy === "draft"
+                        ? "Saving…"
+                        : influencer.gmail?.draft_id
+                        ? "Save to Gmail drafts again"
+                        : "Save to Gmail drafts"}
+                    </button>
+                    <button className="btn" onClick={() => setConfirmSend(true)} disabled={busy !== null}>
+                      Send email
+                    </button>
+                  </div>
+                )}
+
+                {gmail.connected && confirmSend && (
+                  <div
+                    role="alertdialog"
+                    aria-label="Confirm sending"
+                    style={{
+                      marginTop: "var(--space-2)",
+                      padding: "var(--space-3)",
+                      borderLeft: "2px solid var(--berry)",
+                      background: "var(--paper-raised)",
+                    }}
+                  >
+                    <p style={{ fontSize: "0.92rem" }}>
+                      Send this email to <strong>{influencer.email}</strong> from{" "}
+                      <strong>{gmail.email}</strong>? It can't be unsent.
+                    </p>
+                    <div className="entry-actions">
+                      <button className="btn" onClick={sendEmail} disabled={busy === "send"}>
+                        {busy === "send" ? "Sending…" : "Yes, send it"}
+                      </button>
+                      <button
+                        className="btn btn-secondary"
+                        onClick={() => setConfirmSend(false)}
+                        disabled={busy === "send"}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {gmail.connected && influencer.gmail?.draft_id && !confirmSend && (
+                  <p style={{ fontSize: "0.82rem", marginTop: "var(--space-1)", color: "var(--moss)" }}>
+                    Saved to your Gmail drafts — you can edit it there. "Send email" sends that
+                    saved version.
+                  </p>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
         {actionError && (
-          <p className="error-text" style={{ marginTop: "var(--space-1)" }}>
+          <p className="error-text" role="alert" style={{ marginTop: "var(--space-2)" }}>
             {actionError}
           </p>
         )}

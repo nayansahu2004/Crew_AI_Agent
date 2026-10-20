@@ -1,3 +1,4 @@
+# File path: backend/services/auth_service.py
 """
 Handles the `users` collection: creating/fetching the Mongo profile
 linked to a verified Supabase identity.
@@ -10,6 +11,7 @@ from datetime import UTC, datetime
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
+from backend.core.config import settings
 from backend.models import serialize_doc
 from backend.schemas.user import UserProfileUpdate
 
@@ -19,7 +21,8 @@ async def get_or_create_user(
 ) -> dict:
     """Called by GET /api/users/me. If no Mongo profile exists yet for
     this Supabase user (e.g. their very first authenticated request),
-    creates a minimal one on the fly rather than 404-ing."""
+    creates a blank one on the fly rather than 404-ing. The profile
+    fields stay empty until the user fills in the details form."""
     doc = await db.users.find_one({"supabase_user_id": supabase_user_id})
     if doc:
         return serialize_doc(doc)
@@ -29,8 +32,12 @@ async def get_or_create_user(
         "supabase_user_id": supabase_user_id,
         "email": email,
         "name": None,
+        "job_title": None,
         "company_name": None,
+        "phone": None,
         "role": "admin",
+        # Searches left. Accounts WITHOUT this field are unlimited.
+        "run_credits": settings.free_runs_for_new_users,
         "created_at": now,
         "updated_at": now,
     }

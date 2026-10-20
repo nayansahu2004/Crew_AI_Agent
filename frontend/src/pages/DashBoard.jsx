@@ -1,11 +1,13 @@
 // File path: frontend/src/pages/Dashboard.jsx
 //
 // Campaign index. Rendered as an editorial list (name, one line of
-// metadata, status) separated by hairlines -- not a grid of cards.
+// metadata, status) separated by hairlines -- not a grid of cards. With
+// no campaigns yet it shows a short "getting started" list instead.
 
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../lib/apiClient";
+import { formatFollowers } from "../lib/format";
 
 export function Dashboard() {
   const [campaigns, setCampaigns] = useState(null);
@@ -34,18 +36,15 @@ export function Dashboard() {
         </Link>
       </header>
 
-      {error && <p className="error-text">{error}</p>}
+      {error && (
+        <p className="error-text" role="alert">
+          {error}
+        </p>
+      )}
 
       {!campaigns && !error && <p className="muted">Loading…</p>}
 
-      {campaigns && campaigns.length === 0 && (
-        <div style={{ padding: "var(--space-5) 0" }}>
-          <h3 style={{ marginBottom: "var(--space-2)" }}>No campaigns yet</h3>
-          <p className="muted">
-            Create your first campaign to start discovering creators.
-          </p>
-        </div>
-      )}
+      {campaigns && campaigns.length === 0 && <GettingStarted />}
 
       {campaigns && campaigns.length > 0 && (
         <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
@@ -54,6 +53,34 @@ export function Dashboard() {
           ))}
         </ul>
       )}
+    </div>
+  );
+}
+
+function GettingStarted() {
+  return (
+    <div style={{ padding: "var(--space-4) 0" }}>
+      <h3 style={{ marginBottom: "var(--space-2)" }}>Welcome to Crew</h3>
+      <p className="muted" style={{ marginBottom: "var(--space-3)" }}>
+        Three steps to your first list of creators:
+      </p>
+      <ol style={{ margin: 0, paddingLeft: "1.2rem", maxWidth: "36rem" }}>
+        <li style={{ marginBottom: "var(--space-2)" }}>
+          <Link to="/settings">Connect your Gmail</Link>. This lets you save drafts and send
+          emails. You can skip it for now and do it later.
+        </li>
+        <li style={{ marginBottom: "var(--space-2)" }}>
+          <Link to="/campaigns/new">Create a campaign</Link> describing the creators you're
+          looking for.
+        </li>
+        <li style={{ marginBottom: "var(--space-2)" }}>
+          Open the campaign and click <strong>Run pipeline</strong>. Crew finds, reviews and
+          drafts emails for creators.
+        </li>
+      </ol>
+      <p style={{ marginTop: "var(--space-3)" }}>
+        <Link to="/guide">Read the full guide →</Link>
+      </p>
     </div>
   );
 }
@@ -91,12 +118,6 @@ function CampaignRow({ campaign }) {
       </Link>
     </li>
   );
-}
-
-function formatFollowers(n) {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(/\.0$/, "")}K`;
-  return String(n);
 }
 
 function toneFor(status) {

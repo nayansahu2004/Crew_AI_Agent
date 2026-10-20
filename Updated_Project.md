@@ -1,996 +1,288 @@
-AI Influencer Discovery & Outreach Platform
-
-1. Project Overview
-
-This project is an AI-powered influencer marketing platform designed to automate and streamline influencer discovery, profile analysis, and personalized outreach.
-
-The platform uses a multi-agent CrewAI workflow:
-
-Discovery — finds Indian fashion/beauty Instagram influencers within a specified follower range.
-
-Review — analyzes and evaluates discovered creators using additional web data.
-
-Outreach — generates personalized first-contact messages asking about availability and rates.
-
-The updated system adds a real-time frontend so users can see qualified influencers as they are discovered instead of waiting for the entire CrewAI workflow to finish.
-
-2. Core Product Idea
-
-The central architecture is:
-
-The frontend controls the workflow, the backend manages state and streaming, CrewAI handles agentic reasoning, and external tools provide real-world data.
-
-The product flow is:
-
-Discover → Review → Approve → Outreach
-
-Instead of a terminal-only workflow:
-
-Run Crew → Wait → Inspect output
-
-the user gets a live application where qualified influencers appear as cards during discovery.
-
-3. Overall System Architecture
-
-                         ┌─────────────────────────┐
-                         │       USER / BRAND      │
-                         └────────────┬────────────┘
-                                      │
-                                      ▼
-                         ┌─────────────────────────┐
-                         │      React Frontend      │
-                         │      Vite + Tailwind     │
-                         │                          │
-                         │ • Search configuration   │
-                         │ • Live influencer cards │
-                         │ • Review dashboard       │
-                         │ • Outreach dashboard     │
-                         └────────────┬────────────┘
-                                      │
-                         REST API     │     SSE
-                                      ▼
-                    ┌─────────────────────────────────┐
-                    │          FastAPI Backend        │
-                    │                                 │
-                    │ • API endpoints                 │
-                    │ • Job/session management        │
-                    │ • Event streaming               │
-                    │ • Validation                    │
-                    │ • Database access               │
-                    └───────────────┬─────────────────┘
-                                    │
-                                    ▼
-                    ┌─────────────────────────────────┐
-                    │         CrewAI Orchestrator     │
-                    │                                 │
-                    │  Discovery → Review → Outreach  │
-                    └───────┬──────────┬──────────┬───┘
-                            │          │          │
-                    ┌───────▼───┐ ┌────▼─────┐ ┌──▼─────────┐
-                    │ Discovery │ │ Reviewer  │ │ Outreach   │
-                    │   Agent   │ │   Agent   │ │   Agent    │
-                    └─────┬─────┘ └────┬──────┘ └────┬──────┘
-                          │             │             │
-                ┌─────────┴───┐    ┌────┴────┐       │
-                │             │    │         │       │
-             Serper       Web/Social Firecrawl│     LLM
-             Search        Data     Tavily   │
-                                              │
-                                              ▼
-                                      ┌─────────────┐
-                                      │   Gemini    │
-                                      │  3.6 Flash  │
-                                      └─────────────┘
-
-                         ┌─────────────────────────┐
-                         │       PostgreSQL         │
-                         │                         │
-                         │ Influencers             │
-                         │ Searches                │
-                         │ Reviews                 │
-                         │ Outreach                │
-                         │ Campaigns               │
-                         └─────────────────────────┘
-
-4. Role of Each Layer
-
-4.1 Frontend
-
-The React frontend is the main user interface and control center.
-
-It should allow users to:
-
-Configure influencer searches
-
-See live discovery progress
-
-View influencer cards as they are found
-
-Review individual creators
-
-Select creators for outreach
-
-View generated outreach messages
-
-Edit/copy/send outreach messages
-
-See agent activity and progress
-
-The frontend should not perform the AI reasoning itself.
-
-5. Discovery Interface
-
-The user can configure a search such as:
-
-Niche:
-[ Fashion ▼ ]
-
-Location:
-[ India ]
-
-Followers:
-[20K] — [500K]
-
-Platform:
-[ Instagram ]
-
-                     [ Find Influencers ]
-
-Once the search begins:
-
-Discovery running...
-
-✓ 8 influencers found
-🔎 Searching...
-
-Qualified influencers appear immediately as cards.
-
-Example:
-
-┌─────────────────────────┐
-│         PHOTO           │
-│                         │
-│ @creator_1              │
-│ 125K followers          │
-│ Fashion                 │
-│ India                   │
-│                         │
-│ [Review] [Select ✓]     │
-└─────────────────────────┘
-
-6. Why Real-Time Discovery Is Important
-
-The original terminal workflow could look like:
-
-CrewAI is running...
-CrewAI is running...
-CrewAI is running...
-
-The user cannot easily tell:
-
-What the agent is currently doing
-
-Whether a tool call has completed
-
-Why another search is being performed
-
-Which influencers have already been found
-
-Why an influencer was rejected
-
-The updated frontend exposes this process.
-
-The system can show:
-
-Discovery Activity
-
-✓ @creator1       125K   Fashion   → MATCH
-✓ @creator2        87K   Beauty    → MATCH
-✕ @creator3       1.2M   Fashion   → Rejected: >500K
-✕ @creator4        12K   Beauty    → Rejected: <20K
-✕ @creator5        91K   Food      → Rejected: wrong niche
-
-This makes the agent's behavior observable.
-
-7. CrewAI's Role
-
-CrewAI remains the orchestration and agentic reasoning layer.
-
-It does not get replaced by the frontend.
-
-The system becomes:
-
-Frontend
-   ↓
-FastAPI
-   ↓
-CrewAI
-   ↓
-Agents + Tools + LLM
-
-CrewAI manages:
-
-Agent definitions
-
-Tasks
-
-Agent-to-agent workflow
-
-Tool usage
-
-LLM reasoning
-
-Structured task execution
-
-The three primary agents are:
-
-Discovery Agent
-
-Finds and qualifies potential influencers.
-
-Reviewer Agent
-
-Analyzes selected creators using additional information.
-
-Outreach Agent
-
-Creates personalized outreach messages.
-
-8. Discovery Agent Flow
-
-User requirements
-       ↓
-Discovery Agent
-       ↓
-Serper
-       ↓
-Search results
-       ↓
-Qualification layer
-       ↓
-Qualified influencer
-       ↓
-Frontend card
-
-The Discovery Agent can reason about:
-
-Whether the creator is relevant
-
-Whether the creator is based in India
-
-Whether the creator fits the fashion/beauty niche
-
-Whether the result represents an actual creator
-
-Whether enough information is available
-
-However, simple numerical checks should preferably be deterministic.
-
-For example:
-
-if 20_000 <= followers <= 500_000:
-    qualified = True
-
-The LLM should be used for reasoning-heavy decisions rather than simple arithmetic or range checking.
-
-9. Recommended Qualification Architecture
-
-             SEARCH
-               │
-               ▼
-          Raw results
-               │
-               ▼
-       Deterministic filters
-               │
-       ┌───────┴────────┐
-       │                │
-    Reject            Pass
-       │                │
-       │                ▼
-       │          Discovery LLM
-       │                │
-       │                ▼
-       │          Qualified
-       │                │
-       └───────┐        ▼
-               │      CARD
-               ▼
-            Database
-
-This reduces unnecessary LLM calls and makes filtering more predictable.
-
-10. Structured Influencer Output
-
-Each qualified influencer should be represented in a standard structure:
-
-{
-  "id": "inf_001",
-  "name": "Creator Name",
-  "username": "@creator",
-  "platform": "instagram",
-  "followers": 125000,
-  "category": "fashion",
-  "location": "India",
-  "profile_url": "...",
-  "source": "serper",
-  "qualification": {
-    "location": true,
-    "category": true,
-    "followers": true
-  }
-}
-
-This structure becomes the contract between the backend, database, agents, and frontend.
-
-11. Backend Architecture
-
-FastAPI is recommended as the backend.
-
-It acts as the bridge between React, CrewAI, external tools, and the database.
-
-Example API:
-
-POST /api/search
-
-This starts a discovery job.
-
-Example response:
-
-{
-  "job_id": "search_123"
-}
-
-The frontend can then subscribe to the job's events.
-
-12. Server-Sent Events (SSE)
-
-SSE is recommended for the first version because most updates flow from the backend to the frontend.
-
-The event flow can be:
-
-SEARCH_STARTED
-       ↓
-TOOL_STARTED
-       ↓
-TOOL_COMPLETED
-       ↓
-INFLUENCER_FOUND
-       ↓
-INFLUENCER_FOUND
-       ↓
-INFLUENCER_REJECTED
-       ↓
-INFLUENCER_FOUND
-       ↓
-DISCOVERY_COMPLETED
-
-Example event:
-
-{
-  "event": "influencer_found",
-  "data": {
-    "id": "inf_001",
-    "username": "@creator",
-    "followers": 125000,
-    "category": "Fashion",
-    "location": "India"
-  }
-}
-
-React receives the event and renders the card immediately.
-
-13. Why SSE Instead of WebSockets Initially
-
-The application's primary real-time data flow is one-way:
-
-Backend ───────────────► Frontend
-
-influencer found
-tool started
-tool completed
-influencer rejected
-review completed
-discovery completed
-
-User actions can use normal REST endpoints:
-
-POST /search
-POST /influencers/{id}/review
-POST /influencers/{id}/approve
-POST /influencers/{id}/outreach
-
-Therefore SSE is simpler than introducing WebSockets for the initial version.
-
-14. Database
-
-PostgreSQL is recommended for persistent application state.
-
-The application should not depend entirely on live CrewAI execution.
-
-Recommended tables:
-
-users
-campaigns
-searches
-influencers
-influencer_reviews
-outreach_messages
-agent_runs
-agent_events
-
-Campaign
-
-campaign
-──────────────
-id
-name
-niche
-location
-min_followers
-max_followers
-created_at
-
-Influencer
-
-influencer
-──────────────
-id
-name
-username
-platform
-followers
-category
-location
-profile_url
-avatar_url
-status
-created_at
-
-Review
-
-review
-──────────────
-id
-influencer_id
-engagement_score
-brand_fit
-audience_fit
-content_quality
-summary
-created_at
-
-15. Review Stage
-
-Review should be independently triggerable.
-
-Flow:
-
-Influencer Card
-       │
-       ▼
-    [Review]
-       │
-       ▼
-Reviewer Agent
-       │
- ┌─────┼───────────┐
- ▼     ▼           ▼
-Firecrawl Tavily  Gemini
-       │
-       ▼
-    Analysis
-       │
-       ▼
-     Database
-       │
-       ▼
-    Frontend
-
-The review panel could show:
-
-┌──────────────────────────────────┐
-│ @creator                         │
-│ 125K followers                   │
-│                                  │
-│ Engagement       4.8%            │
-│ Brand Fit        High            │
-│ Audience Fit     Strong          │
-│                                  │
-│ Content: Fashion / Lifestyle     │
-│                                  │
-│ Review summary                   │
-│ ...                              │
-│                                  │
-│ [Generate Outreach]              │
-└──────────────────────────────────┘
-
-16. Outreach Stage
-
-The user selects creators:
-
-☑ @creator1
-☑ @creator2
-☐ @creator3
-
-Then selects:
-
-[Generate Outreach]
-
-Flow:
-
-Selected influencer
-        │
-        ▼
-Outreach Agent
-        │
-        ▼
-Gemini
-        │
-        ▼
-Personalized message
-        │
-        ▼
-Frontend
-
-The generated message can include:
-
-Creator name
-
-Relevant content/category
-
-Brand/campaign context
-
-Collaboration request
-
-Availability request
-
-Rate request
-
-The user can then:
-
-[Edit] [Copy] [Send]
-
-17. Agent Event System
-
-Every important agent/tool action should produce an event.
-
-Example:
-
-{
-  "event": "tool_started",
-  "agent": "discovery",
-  "tool": "serper"
-}
-
-Then:
-
-{
-  "event": "tool_completed",
-  "agent": "discovery",
-  "tool": "serper",
-  "results": 10
-}
-
-Then:
-
-{
-  "event": "influencer_found",
-  "agent": "discovery",
-  "influencer_id": "inf_123"
-}
-
-And:
-
-{
-  "event": "influencer_rejected",
-  "reason": "followers_above_limit"
-}
-
-This creates an agent observability layer.
-
-18. Agent Activity Panel
-
-A useful UI component is:
-
-Agent Activity
-
-21:14:03  Discovery started
-21:14:04  Serper search started
-21:14:07  10 results received
-21:14:08  3 influencers qualified
-21:14:08  4 rejected
-21:14:09  Searching for additional creators...
-
-This directly answers questions such as:
-
-Why is the agent still searching?
-
-Which tool is running?
-
-How many results were received?
-
-Why was a creator rejected?
-
-Has the current tool execution completed?
-
-19. Independent Agent Stages
-
-Rather than always running the complete Crew sequentially, the stages should be independently triggerable.
-
-              ┌──────────────┐
-              │  Discovery   │
-              └──────┬───────┘
-                     │
-              User selects
-                     │
-              ┌──────▼───────┐
-              │    Review    │
-              └──────┬───────┘
-                     │
-              User approves
-                     │
-              ┌──────▼───────┐
-              │   Outreach   │
-              └──────────────┘
-
-This gives the user control over the process and avoids unnecessarily running later agents.
-
-20. CrewAI Architecture
-
-The existing CrewAI concept can remain:
-
-Crew(
-    agents=[
-        discovery_agent,
-        reviewer_agent,
-        outreach_agent
-    ],
-    tasks=[
-        discovery_task,
-        review_task,
-        outreach_task
-    ],
-    process=Process.sequential
-)
-
-However, the application should not necessarily execute the entire Crew for every user interaction.
-
-The preferred product-level workflow is:
-
-Discovery
-    ↓
-User selects creators
-    ↓
-Review
-    ↓
-User approves
-    ↓
-Outreach
-
-This makes the system human-in-the-loop.
-
-21. Recommended Project Structure
-
-influencer-ai/
-│
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── SearchForm.jsx
-│   │   │   ├── InfluencerCard.jsx
-│   │   │   ├── InfluencerGrid.jsx
-│   │   │   ├── ReviewPanel.jsx
-│   │   │   ├── OutreachPanel.jsx
-│   │   │   └── AgentActivity.jsx
-│   │   │
-│   │   ├── pages/
-│   │   │   ├── Dashboard.jsx
-│   │   │   ├── Discovery.jsx
-│   │   │   └── Campaign.jsx
-│   │   │
-│   │   ├── services/
-│   │   │   └── api.js
-│   │   │
-│   │   └── App.jsx
-│   │
-│   └── package.json
-│
-├── backend/
-│   ├── api/
-│   │   ├── search.py
-│   │   ├── review.py
-│   │   └── outreach.py
-│   │
-│   ├── agents/
-│   │   ├── discovery.py
-│   │   ├── reviewer.py
-│   │   └── outreach.py
-│   │
-│   ├── tasks/
-│   │   ├── discovery.py
-│   │   ├── review.py
-│   │   └── outreach.py
-│   │
-│   ├── tools/
-│   │   ├── serper.py
-│   │   ├── firecrawl.py
-│   │   └── tavily.py
-│   │
-│   ├── services/
-│   │   ├── crew_service.py
-│   │   ├── event_service.py
-│   │   └── influencer_service.py
-│   │
-│   ├── models/
-│   │   └── database.py
-│   │
-│   └── main.py
-│
-├── database/
-│
-├── .env
-├── docker-compose.yml
-└── README.md
-
-22. Recommended Technology Stack
-
-Layer
-
-Technology
-
-Frontend
-
-React + Vite
-
-Styling
-
-Tailwind CSS
-
-Backend
-
-FastAPI
-
-Agent Framework
-
-CrewAI
-
-LLM
-
-Gemini 3.6 Flash
-
-Search
-
-Serper
-
-Web Scraping
-
-Firecrawl
-
-Web Extraction
-
-Tavily
-
-Database
-
-PostgreSQL
-
-ORM
-
-SQLAlchemy
-
-Live Updates
-
-SSE
-
-API
-
-REST
-
-Environment
-
-uv
-
-Deployment
-
-Docker
-
-Frontend Deployment
-
-Vercel
-
-Backend Deployment
-
-Railway / Render / similar
-
-Redis/Celery can be introduced later if background workloads become heavy. They are not necessary for the first version.
-
-23. Complete Data Flow
-
-USER
- │
- │ Search:
- │ Fashion + India + 20K–500K
- ▼
-REACT
- │
- │ POST /search
- ▼
-FASTAPI
- │
- │ Create search job
- ▼
-CREWAI
- │
- ▼
-DISCOVERY AGENT
- │
- ├──────────────► SERPER
- │                   │
- │                   ▼
- │              Search results
- │                   │
- │◄──────────────────┘
- │
- ▼
-Qualification
- │
- ├── Reject ──────────► DB
- │
- └── Qualified
-          │
-          ├──────────► DB
-          │
-          └──────────► SSE
-                           │
-                           ▼
-                       REACT
-                           │
-                           ▼
-                    INFLUENCER CARD
-                           │
-                           │ User clicks Review
-                           ▼
-                    REVIEW AGENT
-                           │
-                    Firecrawl/Tavily
-                           │
-                           ▼
-                       Analysis
-                           │
-                           ▼
-                         DB
-                           │
-                           ▼
-                       REACT
-                           │
-                           │ User approves
-                           ▼
-                    OUTREACH AGENT
-                           │
-                           ▼
-                        Gemini
-                           │
-                           ▼
-                  Personalized message
-                           │
-                           ▼
-                        REACT
-
-24. Development Roadmap
-
-Phase 1 — Core Discovery
-
-Build:
-
-React
-  ↓
-FastAPI
-  ↓
-CrewAI Discovery
-  ↓
-Serper
-  ↓
-Influencer cards
-
-Goal:
-
-Search → live qualified influencer cards.
-
-Phase 2 — Review
-
-Add:
-
-Card → Review → Firecrawl/Tavily → Analysis
-
-Goal:
-
-User can inspect a creator before selecting them.
-
-Phase 3 — Outreach
-
-Add:
-
-Review → Select → Outreach → Generated message
-
-Goal:
-
-Generate personalized outreach for approved creators.
-
-Phase 4 — Persistence
-
-Add PostgreSQL for:
-
-Campaigns
-
-Saved influencers
-
-Search history
-
-Reviews
-
-Outreach messages
-
-Agent execution history
-
-Phase 5 — Production Features
-
-Potential additions:
-
-Authentication
-
-Campaign management
-
-Email integration
-
-Rate limiting
-
-Agent monitoring
-
-Retry handling
-
-Caching
-
-Background jobs
-
-Better error handling
-
-25. Core Design Principle
-
-The most important architectural distinction is:
-
-CrewAI is not the entire application. It is one service inside the application.
-
-                 YOUR PRODUCT
-                     │
-       ┌─────────────┼──────────────┐
-       │             │              │
-    Frontend       Backend       Database
-       │             │
-       │             └──── CrewAI
-       │                    │
-       │              ┌─────┼─────┐
-       │              │     │     │
-       │          Discovery Review Outreach
-       │
-       └──────── Live agent events ────────►
-
-This turns the project from a simple CrewAI demonstration into an actual agentic influencer-marketing platform featuring:
-
-Real-time agent execution
-
-Tool orchestration
-
-Structured data extraction
-
-Deterministic qualification
-
-LLM-based reasoning
-
-Human-in-the-loop review
-
-Persistent campaign state
-
-Personalized outreach
-
-Agent observability
+# Deploying Crew - Search Influencers (free, first time)
+
+Plan: **website on Vercel**, **backend on Render**, using the database and
+sign-in you already have (MongoDB Atlas, Supabase). Allow about an hour the
+first time. Do the parts **in order**: later parts need web addresses you only
+get from earlier ones.
+
+```
+Visitor's browser
+      │
+      ▼
+ Vercel  ── the website (React)        https://crew-search-influencers.vercel.app
+      │
+      ▼
+ Render  ── the backend (API)          https://crew-search-influencers-api.onrender.com
+      │
+      ├──► MongoDB Atlas   (your data)
+      ├──► Supabase        (sign-in)
+      ├──► Google          (Gmail connection)
+      └──► Serper          (the creator search)
+```
+
+The backend is small (about 65 MB of memory), so Render's free plan is enough,
+your code stays in a **private** repository, and there's nothing else to host.
+One trade-off: Render's free service **goes to sleep after 15 minutes without
+visitors**, and the next visit takes 30–60 seconds to wake it (Part 8 shows a
+free way to keep it awake).
+
+---
+
+## Part 1 — Prepare the project (on your computer)
+
+1. Run the tests once: `uv run pytest backend/test/ -q` — everything should pass.
+2. **Pin the versions that work on your computer.** Without this the server
+   installs the *newest* versions, which can behave differently from the ones
+   you tested.
+   ```powershell
+   uv pip list | Select-String -Pattern "fastapi|uvicorn|pydantic|motor|pymongo|httpx|pyjwt|cryptography"
+   ```
+   In `requirements.txt`, change `>=` to `==` for those lines, using the versions
+   shown (for example `fastapi>=0.115` becomes `fastapi==0.115.6`). Don't paste
+   in your whole `pip freeze`: it contains Windows-only packages that fail on the server.
+3. **Delete anything left over from the old CrewAI version**, if it's in your
+   project: a `backend\crew\` folder, `backend\services\crew_service.py`,
+   `backend\scripts\export_agents.py`, `backend\test\test_agent_loader.py`,
+   `Dockerfile`, `.dockerignore`, `render.yaml`, and any old top-level scripts
+   such as `agents.py`, `tasks.py`, `hand_rolled_agents.py`, `test.py`,
+   `test_with_tools.py`.
+4. Use a separate database for the live site so your test data stays out of
+   it. Nothing to create: it appears when the first user signs up. You'll set
+   `MONGODB_DATABASE=crew_ai_agent_prod` in Part 3.
+
+---
+
+## Part 2 — Put the code on GitHub
+
+1. Install Git from <https://git-scm.com/download/win> and check with `git --version`.
+2. Tell Git who you are. For privacy, use GitHub's no-reply address (GitHub →
+   Settings → Emails → tick "Keep my email addresses private", then copy the
+   `…@users.noreply.github.com` address it shows):
+   ```powershell
+   git config --global user.name "Nayan Kumar Sahu"
+   git config --global user.email "<your-noreply-address>"
+   ```
+3. In the project folder:
+   ```powershell
+   cd E:\Programming\Crew_AI_Agent
+   git init
+   git add .
+   git status
+   ```
+4. **Read the `git status` list carefully.** `.env` must **not** be in it. Confirm:
+   ```powershell
+   git check-ignore -v .env      # should print a .gitignore line
+   ```
+   Also look for files you don't recognise, or any file with a key in it, and
+   remove them with `git rm --cached <file>` (or delete them). **If `.env` ever
+   got committed, stop: every key in it must be replaced.**
+5. Commit:
+   ```powershell
+   git commit -m "Initial commit"
+   git branch -M main
+   ```
+6. On github.com click **New repository**. Name: `crew-search-influencers`.
+   Choose **Private**. Leave "Add a README/.gitignore" **unticked**. Create it.
+7. Connect and upload (a browser window opens to sign you in):
+   ```powershell
+   git remote add origin https://github.com/<your-github-username>/crew-search-influencers.git
+   git push -u origin main
+   ```
+
+---
+
+## Part 3 — The backend on Render
+
+1. Sign up at <https://render.com> with your GitHub account.
+2. **New → Web Service →** pick your `crew-search-influencers` repo (Render will
+   ask permission to read it; private repos are fine).
+3. Fill in:
+
+   | Field | Value |
+   |---|---|
+   | Name | `crew-search-influencers-api` |
+   | Region | The one nearest your users (Singapore for India) |
+   | Branch | `main` |
+   | Root Directory | leave **blank** |
+   | Runtime | **Python 3** |
+   | Build Command | `pip install -r requirements.txt` |
+   | Start Command | `uvicorn backend.main:app --host 0.0.0.0 --port $PORT` |
+   | Instance Type | **Free** |
+
+4. Open **Advanced** and set **Health Check Path** to `/health`.
+5. Add these **Environment Variables** (names exactly as written):
+
+   | Name | Value |
+   |---|---|
+   | `PYTHON_VERSION` | `3.11.9` |
+   | `SUPABASE_URL` | Same as your local `.env` |
+   | `MONGODB_URI` | Same as your local `.env` |
+   | `MONGODB_DATABASE` | `crew_ai_agent_prod` |
+   | `SERPER_API_KEY` | Same as local |
+   | `TOKEN_ENCRYPTION_KEY` | A **new** key: `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"` — keep a copy |
+   | `GOOGLE_CLIENT_ID` | Same as local |
+   | `GOOGLE_CLIENT_SECRET` | Same as local |
+   | `FREE_RUNS_FOR_NEW_USERS` | `2` |
+
+   Three more come **after** the website exists (Part 6): `CORS_ORIGINS`,
+   `FRONTEND_URL`, `GOOGLE_REDIRECT_URI`. Add `SUPABASE_JWT_SECRET` only if
+   your Supabase project uses the old shared secret. Leave `PIPELINE_DEBUG_DUMP` unset.
+6. Click **Create Web Service**. The first build takes 2–4 minutes; watch the
+   **Logs** tab. It ends with "Your service is live".
+7. Your backend's address is at the top of the page, like
+   `https://crew-search-influencers-api.onrender.com`. Open `<address>/health`
+   — you should see `{"status":"ok"}`. Write the address down: it's your **backend URL**.
+
+---
+
+## Part 4 — MongoDB Atlas must accept the server
+
+Atlas → **Network Access → Add IP Address → Allow access from anywhere
+(0.0.0.0/0) → Confirm.** Render's addresses change, so a fixed one can't be
+listed. Your database is still protected by its username and password.
+
+---
+
+## Part 5 — The website on Vercel
+
+### 5.1 Check the terms first
+
+Vercel's free **Hobby** plan is, as far as I know, for **personal,
+non-commercial use**. Crew asks users to pay you for more searches, which is
+commercial. If that applies, use **Cloudflare Pages** or **Netlify** instead
+(both have free plans; check their current terms). The steps are nearly the
+same: connect the GitHub repo, set the root folder to `frontend`, build command
+`npm run build`, output folder `dist`, and add the same environment variables.
+`vercel.json` and `_redirects` are already in the project for all three.
+
+### 5.2 Deploy
+
+1. Sign up at <https://vercel.com> with your GitHub account.
+2. **Add New → Project →** pick the `crew-search-influencers` repo.
+3. Set **Root Directory** to `frontend`. Framework should show **Vite**.
+4. Name the project `crew-search-influencers` (this decides the free address:
+   `https://crew-search-influencers.vercel.app`; if taken, Vercel adds letters,
+   so use whatever address it shows).
+5. Under **Environment Variables** add:
+
+   | Name | Value |
+   |---|---|
+   | `VITE_SUPABASE_URL` | Same as `frontend\.env` |
+   | `VITE_SUPABASE_PUBLISHABLE_KEY` | Same as `frontend\.env` |
+   | `VITE_API_BASE_URL` | Your **backend URL** from Part 3 (no trailing `/`) |
+   | `VITE_SITE_URL` | Your Vercel address, e.g. `https://crew-search-influencers.vercel.app` |
+   | `VITE_FREE_SEARCHES` | `2` |
+
+6. Click **Deploy**. After a minute you get the site's address: your **website
+   URL**. If it differs from what you put in `VITE_SITE_URL`, fix that variable
+   (Settings → Environment Variables) and **Redeploy**.
+
+---
+
+## Part 6 — Connect everything (don't skip: sign-up and Gmail break without this)
+
+1. **Render** → your service → **Environment**. Add:
+
+   | Name | Value |
+   |---|---|
+   | `CORS_ORIGINS` | Your website URL, no trailing `/` |
+   | `FRONTEND_URL` | Your website URL, no trailing `/` |
+   | `GOOGLE_REDIRECT_URI` | `<backend URL>/api/gmail/callback` |
+
+   Render restarts the service by itself when you save.
+
+2. **Supabase** → **Authentication → URL Configuration**: set **Site URL** to your
+   website URL, and add `<website URL>/**` under **Redirect URLs**. Without this,
+   the confirmation email's link points to `localhost`.
+
+3. **Supabase email sending.** The built-in sender allows only a few emails an
+   hour for the whole project, so sign-ups will stall. Either:
+   - turn off **Confirm email** (Authentication → Sign In / Providers → Email) for
+     the launch (easiest, but people can sign up with any address); or
+   - set up your own sender under **Authentication → SMTP Settings** (a free
+     account at Brevo or similar works).
+
+4. **Google Cloud** → **APIs & Services → Credentials →** your OAuth client →
+   under **Authorized redirect URIs** add `<backend URL>/api/gmail/callback`
+   (exactly the same as `GOOGLE_REDIRECT_URI`). Keep the localhost one for testing.
+   Add anyone who should be able to connect Gmail under **Audience → Test users**.
+
+5. **Make yourself unlimited** (the live database doesn't have your account yet).
+   Sign up on the live site first, then on your computer:
+   ```powershell
+   $env:MONGODB_DATABASE = "crew_ai_agent_prod"
+   uv run python -m backend.scripts.grant_credits <your-email> --unlimited
+   Remove-Item Env:MONGODB_DATABASE
+   ```
+
+---
+
+## Part 7 — Test it like a new visitor
+
+Open the website in a private window and check each one:
+
+- [ ] The front page loads, and so does `/how-it-works` after pressing **refresh**
+- [ ] Create an account (and confirm the email, if you left that on)
+- [ ] Sign in; the details form appears if needed
+- [ ] Settings → **Connect Gmail** → Google → back with "Gmail connected"
+- [ ] Create a campaign and **Run pipeline**: the progress strip moves through
+      Discovery, Review and Outreach within a minute
+- [ ] Creators appear with scores; a creator's email draft opens and is signed with your details
+- [ ] **Save to Gmail drafts** works
+- [ ] After 2 runs that find creators, the next shows the "get in touch" notice with your details
+
+**Your first real run is the real test of the search.** The pipeline reads what
+Google shows for Instagram pages, so it's worth trying a few campaigns. If one
+finds little, add `PIPELINE_DEBUG_DUMP=true` on your own computer, run it, and
+look at `backend\outputs\search_debug.jsonl` to see exactly what came back.
+
+**When something fails:** Render's **Logs** tab shows what the backend saw; the
+browser's DevTools (F12) → Console/Network shows what the website saw.
+
+---
+
+## Part 8 — After launch
+
+- **Keep the backend awake (recommended).** A free monitor such as UptimeRobot
+  can request `<backend URL>/health` every 5 minutes so the first visitor of the
+  day doesn't wait a minute for it to wake. The free plan has enough hours for
+  one service to run all month.
+- **Google Search Console** (<https://search.google.com/search-console>): add your
+  site, verify it, submit `<website URL>/sitemap.xml`, and use "Request indexing"
+  on the front page.
+- **Update the site:** change the code, then
+  `git add . ; git commit -m "..." ; git push origin main`. Vercel and Render both
+  redeploy by themselves.
+
+---
+
+## What is and isn't free
+
+| Piece | Cost | Limit to know |
+|---|---|---|
+| Website (Vercel/Cloudflare/Netlify) | Free | Vercel Hobby: non-commercial (see 5.1) |
+| Backend (Render) | Free | Sleeps after 15 min idle (see Part 8) |
+| Database (Atlas free tier) | Free | 512 MB storage |
+| Sign-in (Supabase free) | Free | **Pauses after about 7 days with no activity**: sign in at least weekly, or upgrade; limited emails |
+| **Creator search (Serper)** | Free credits, then paid | Each run makes up to 8 searches (`PIPELINE_MAX_QUERIES`) and each search costs one credit. Check serper.dev for the free amount and the price after |
+| Gmail connection | Free | While the Google app is in Testing mode: 100 listed users, access expires every 7 days |
+| Domain | `.vercel.app` is free | A custom domain (about ₹800–1,000/year) is the one thing worth paying for: it helps search ranking and looks more trustworthy |
+
+There is no AI bill: the search uses no AI service.
+
+---
+
+## Troubleshooting
+
+| What you see | Likely cause and fix |
+|---|---|
+| Render build fails | Read the last lines of the **Logs** tab. Most often a pinned version in `requirements.txt` that doesn't exist: fix the pin and push again |
+| Service shows **Failed** / crashes at startup | A required variable is missing or misspelled. The Logs tab names it (usually `SUPABASE_URL`, `MONGODB_URI` or `SERPER_API_KEY`) |
+| Website says "Can't reach the server" | Wrong `VITE_API_BASE_URL`, or the backend is waking up: open `<backend URL>/health` and wait a minute |
+| First page load takes about a minute | The free backend was asleep (Part 8) |
+| Browser console: **CORS error** | `CORS_ORIGINS` doesn't exactly match the website URL (check `https`, spelling, no trailing `/`) |
+| Confirmation email links to `localhost` | Supabase Site URL / Redirect URLs not set (Part 6, step 2) |
+| Google: `redirect_uri_mismatch` | The redirect address in Google Cloud and `GOOGLE_REDIRECT_URI` aren't identical |
+| "The search service (Serper) refused the request…" | Wrong `SERPER_API_KEY`, or its credits have run out |
+| A campaign finds no creators | The result says "this search wasn't used". Try broader category words or a wider follower range |
+| Refreshing `/how-it-works` shows "not found" | The rewrite file wasn't deployed: check `frontend/vercel.json` exists in the repo |

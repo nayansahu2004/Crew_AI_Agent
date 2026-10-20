@@ -14,3 +14,18 @@ export function normalizeScore(score) {
   if (score == null) return null;
   return score > 10 ? score / 10 : score;
 }
+
+// The API sends timestamps as UTC but without a "Z" suffix, which
+// JavaScript would read as LOCAL time -- shifting every elapsed-time
+// calculation by the viewer's UTC offset. Treat zone-less values as UTC.
+export function parseUtc(value) {
+  if (!value) return null;
+  const hasZone = /(?:[zZ]|[+-]\d{2}:?\d{2})$/.test(value);
+  return new Date(hasZone ? value : `${value}Z`);
+}
+
+export function formatElapsed(totalSeconds) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}

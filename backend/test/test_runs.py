@@ -11,7 +11,7 @@ from backend.test.test_campaigns import VALID_CAMPAIGN_BODY
 
 
 @pytest.mark.asyncio
-async def test_start_run_returns_202_and_queued_status(client, mock_execute_campaign_run):
+async def test_start_run_returns_202_and_queued_status(client, completed_profile, mock_execute_campaign_run):
     create_response = await client.post("/api/campaigns", json=VALID_CAMPAIGN_BODY)
     campaign_id = create_response.json()["id"]
 
@@ -24,7 +24,7 @@ async def test_start_run_returns_202_and_queued_status(client, mock_execute_camp
 
 @pytest.mark.asyncio
 async def test_start_run_schedules_background_task_with_correct_config(
-    client, mock_execute_campaign_run
+    client, completed_profile, mock_execute_campaign_run
 ):
     create_response = await client.post("/api/campaigns", json=VALID_CAMPAIGN_BODY)
     campaign_id = create_response.json()["id"]
@@ -58,7 +58,7 @@ async def test_start_run_for_nonexistent_campaign_returns_404(
 
 
 @pytest.mark.asyncio
-async def test_get_run_status(client, mock_execute_campaign_run):
+async def test_get_run_status(client, completed_profile, mock_execute_campaign_run):
     create_response = await client.post("/api/campaigns", json=VALID_CAMPAIGN_BODY)
     campaign_id = create_response.json()["id"]
 
@@ -76,7 +76,7 @@ async def test_get_run_status(client, mock_execute_campaign_run):
 
 
 @pytest.mark.asyncio
-async def test_list_runs_for_campaign(client, mock_execute_campaign_run):
+async def test_list_runs_for_campaign(client, completed_profile, mock_execute_campaign_run):
     create_response = await client.post("/api/campaigns", json=VALID_CAMPAIGN_BODY)
     campaign_id = create_response.json()["id"]
 
@@ -86,3 +86,16 @@ async def test_list_runs_for_campaign(client, mock_execute_campaign_run):
     response = await client.get(f"/api/campaigns/{campaign_id}/runs")
     assert response.status_code == 200
     assert len(response.json()) == 2
+
+
+@pytest.mark.asyncio
+async def test_start_run_requires_a_complete_profile(client, mock_execute_campaign_run):
+    create_response = await client.post("/api/campaigns", json=VALID_CAMPAIGN_BODY)
+    campaign_id = create_response.json()["id"]
+
+    # No profile details saved -> the run must be refused, because the
+    # outreach emails are signed with those details.
+    response = await client.post(f"/api/campaigns/{campaign_id}/runs")
+    assert response.status_code == 409
+    assert response.json()["error"]["code"] == "PROFILE_INCOMPLETE"
+    assert len(mock_execute_campaign_run) == 0

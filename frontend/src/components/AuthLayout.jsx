@@ -4,8 +4,13 @@
 // editorial column rather than a boxed "auth card" -- keeps it
 // consistent with the rest of the app's visual language.
 
+import { Link } from "react-router-dom";
+import { Seo } from "./Seo";
+
 export function AuthLayout({ title, children, footer }) {
   return (
+    <>
+    <Seo title={`${title} | Crew`} noindex />
     <div
       style={{
         minHeight: "100%",
@@ -16,6 +21,19 @@ export function AuthLayout({ title, children, footer }) {
       }}
     >
       <div style={{ width: "100%", maxWidth: "24rem" }}>
+        <p style={{ marginBottom: "var(--space-4)" }}>
+          <Link
+            to="/"
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: "1.3rem",
+              color: "var(--ink)",
+              textDecoration: "none",
+            }}
+          >
+            Crew
+          </Link>
+        </p>
         <h1 style={{ marginBottom: "var(--space-4)" }}>{title}</h1>
         {children}
         {footer && (
@@ -25,5 +43,6 @@ export function AuthLayout({ title, children, footer }) {
         )}
       </div>
     </div>
+    </>
   );
 }

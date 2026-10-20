@@ -21,6 +21,7 @@ requests>=2.32
 
 # --- Environment variables ---
 python-dotenv>=1.0
+cryptography>=43      # encrypts stored Gmail tokens (also needed by pyjwt[crypto])
 
 # --- AI / CrewAI ---
 crewai>=1.15

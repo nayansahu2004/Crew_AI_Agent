@@ -11,11 +11,14 @@ file, and never touches your real Gemini/Serper/Mongo credentials.
 
 import os
 
+from cryptography.fernet import Fernet
+
 os.environ.setdefault("SUPABASE_URL", "https://test-project.supabase.co")
 os.environ.setdefault("MONGODB_URI", "mongodb://localhost:27017")
 os.environ.setdefault("SERPER_API_KEY", "test-serper-key")
-os.environ.setdefault("FIRECRAWL_API_KEY", "test-firecrawl-key")
-os.environ.setdefault("TAVILY_API_KEY", "test-tavily-key")
+os.environ.setdefault("GOOGLE_CLIENT_ID", "test-client.apps.googleusercontent.com")
+os.environ.setdefault("GOOGLE_CLIENT_SECRET", "test-client-secret")
+os.environ.setdefault("TOKEN_ENCRYPTION_KEY", Fernet.generate_key().decode())
 
 import pytest
 import pytest_asyncio
@@ -27,6 +30,13 @@ from backend.core.security import AuthenticatedUser, get_current_user
 
 TEST_USER = AuthenticatedUser(supabase_user_id="test-user-1", email="test@example.com")
 OTHER_USER = AuthenticatedUser(supabase_user_id="test-user-2", email="other@example.com")
+
+COMPLETE_PROFILE = {
+    "name": "Test User",
+    "job_title": "Founder",
+    "company_name": "Test Co",
+    "phone": "+91 98765 43210",
+}
 
 
 @pytest.fixture
@@ -40,8 +50,8 @@ def fake_db():
 @pytest.fixture
 def mock_execute_campaign_run(monkeypatch):
     """Replaces the background-task function POST /api/campaigns/{id}/runs
-    schedules, so starting a run never imports CrewAI, never calls
-    Gemini/Ollama, and never touches crew_service.py's real pymongo
+    schedules, so starting a run never searches the web and never touches
+    pipeline_service.py's real pymongo
     client. Returns the list of (run_id, campaign_config) calls made, so
     tests can assert on what the route passed through."""
     calls = []
@@ -87,3 +97,12 @@ async def unauthenticated_client(fake_db):
         yield ac
 
     app.dependency_overrides.clear()
+
+
+@pytest_asyncio.fixture
+async def completed_profile(client):
+    """Fills in the test user's profile. Running a campaign requires a
+    complete profile (it's used to sign the outreach emails)."""
+    response = await client.post("/api/users/me", json=COMPLETE_PROFILE)
+    assert response.status_code == 200
+    return response.json()

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { AuthLayout } from "../components/AuthLayout";
+import { friendlyAuthError } from "../lib/authErrors";
 
 export function SignIn() {
   const { session, signIn } = useAuth();
@@ -13,7 +14,7 @@ export function SignIn() {
   const [submitting, setSubmitting] = useState(false);
 
   if (session) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/campaigns" replace />;
   }
 
   async function handleSubmit(e) {
@@ -25,10 +26,10 @@ export function SignIn() {
 
     setSubmitting(false);
     if (error) {
-      setError(error.message);
+      setError(friendlyAuthError(error));
       return;
     }
-    navigate("/");
+    navigate("/campaigns");
   }
 
   return (
@@ -63,7 +64,7 @@ export function SignIn() {
           />
         </div>
 
-        {error && <p className="error-text" style={{ marginBottom: "var(--space-3)" }}>{error}</p>}
+        {error && <p className="error-text" role="alert" style={{ marginBottom: "var(--space-3)" }}>{error}</p>}
 
         <button className="btn" type="submit" disabled={submitting} style={{ width: "100%" }}>
           {submitting ? "Signing in…" : "Sign in"}

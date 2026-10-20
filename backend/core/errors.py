@@ -12,10 +12,12 @@ forward -- existing plain HTTPException raises still work (a generic
 code is filled in automatically), so nothing breaks immediately, but new
 code should use AppError for a meaningful `code` field.
 
-register_exception_handlers(app) wires up three handlers:
+register_exception_handlers(app) wires up four handlers:
   * AppError            -> the shape above, using its own code/message
   * HTTPException        -> the shape above, with a generic code derived
                              from the status (e.g. 404 -> "NOT_FOUND")
+  * RequestValidationError -> 422 with a readable message naming each
+                             invalid field
   * any other Exception  -> logged in full server-side, but the client
                              only ever sees a generic 500 message --
                              never a stack trace or internal detail
@@ -30,10 +32,12 @@ from fastapi.responses import JSONResponse
 logger = logging.getLogger(__name__)
 
 _GENERIC_CODES_BY_STATUS = {
-    status.HTTP_401_UNAUTHORIZED: "UNAUTHORIZED",
-    status.HTTP_403_FORBIDDEN: "FORBIDDEN",
-    status.HTTP_404_NOT_FOUND: "NOT_FOUND",
-    status.HTTP_422_UNPROCESSABLE_CONTENT: "VALIDATION_ERROR",
+    401: "UNAUTHORIZED",
+    403: "FORBIDDEN",
+    404: "NOT_FOUND",
+    409: "CONFLICT",
+    422: "VALIDATION_ERROR",
+    429: "RATE_LIMITED",
 }
 
 
@@ -61,6 +65,18 @@ def _error_response(status_code: int, code: str, message: str) -> JSONResponse:
     )
 
 
+def _readable_validation_message(errors: list[dict]) -> str:
+    """'phone: Enter a valid phone number; name: String should have at
+    least 2 characters' -- instead of dumping Pydantic's raw error list."""
+    parts = []
+    for error in errors:
+        location = [str(p) for p in error.get("loc", ()) if p not in ("body", "query", "path")]
+        field = ".".join(location) or "request"
+        message = str(error.get("msg", "invalid value")).removeprefix("Value error, ")
+        parts.append(f"{field}: {message}")
+    return "Please check your input — " + "; ".join(parts)
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppError)
     async def handle_app_error(request: Request, exc: AppError) -> JSONResponse:
@@ -81,14 +97,8 @@ def register_exception_handlers(app: FastAPI) -> None:
     async def handle_validation_error(
         request: Request, exc: RequestValidationError
     ) -> JSONResponse:
-        # Pydantic's default validation error body isn't in our shape --
-        # normalize it, but keep exc.errors() in the message for
-        # debuggability (it describes which field was invalid, not
-        # anything secret).
         return _error_response(
-            status.HTTP_422_UNPROCESSABLE_CONTENT,
-            "VALIDATION_ERROR",
-            f"Invalid request: {exc.errors()}",
+            422, "VALIDATION_ERROR", _readable_validation_message(exc.errors())
         )
 
     @app.exception_handler(Exception)

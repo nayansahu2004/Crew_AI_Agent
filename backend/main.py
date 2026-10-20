@@ -9,13 +9,14 @@ inside backend/, because all imports use the `backend.` prefix:
 """
 
 import logging
+import re
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.api import campaigns, users
+from backend.api import campaigns, gmail, users
 from backend.api.influencers import campaign_influencers_router, influencers_router
 from backend.api.runs import campaign_runs_router, runs_router
 from backend.core.config import settings
@@ -24,8 +25,8 @@ from backend.core.errors import register_exception_handlers
 
 # --- Logging setup ---
 # backend/logs/ holds THIS app's logs (requests, errors, startup/shutdown).
-# backend/outputs/ (written by crew/agents.py's step_callback) holds raw
-# CrewAI run artifacts. Keeping them in separate folders/files makes it
+# backend/outputs/ (written by pipeline/workflow.py when PIPELINE_DEBUG_DUMP is on)
+# holds raw search results. Keeping them in separate folders/files makes it
 # obvious which is which when debugging a failed run vs. an API bug.
 LOGS_DIR = Path(__file__).resolve().parent / "logs"
 LOGS_DIR.mkdir(parents=True, exist_ok=True)
@@ -41,17 +42,37 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+class RedactOAuthParams(logging.Filter):
+    """uvicorn's access log prints the full request URL. The Google sign-in
+    callback carries a one-time `code` and a `state` value in it, which
+    shouldn't sit in log files, so blank them out before they're written."""
+
+    _pattern = re.compile(r"([?&](?:code|state)=)[^&\s\"]+")
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if isinstance(record.args, tuple):
+            record.args = tuple(
+                self._pattern.sub(r"\1[redacted]", arg) if isinstance(arg, str) else arg
+                for arg in record.args
+            )
+        return True
+
+
+logging.getLogger("uvicorn.access").addFilter(RedactOAuthParams())
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup: connect to MongoDB and ensure indexes exist.
     Shutdown: close the connection cleanly."""
+    logger.info("CORS allowed origins: %s", settings.cors_origins_list)
     await connect_to_mongo()
     yield
     await close_mongo_connection()
 
 
 app = FastAPI(
-    title="Crew AI Influencer API",
+    title="Crew - Search Influencers API",
     version="0.1.0",
     lifespan=lifespan,
 )
@@ -74,6 +95,8 @@ app.include_router(campaign_influencers_router)
 app.include_router(influencers_router)
 app.include_router(campaign_runs_router)
 app.include_router(runs_router)
+app.include_router(gmail.router)
+app.include_router(gmail.influencer_gmail_router)
 
 
 @app.get("/health", tags=["health"])

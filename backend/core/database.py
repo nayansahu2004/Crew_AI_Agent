@@ -73,5 +73,6 @@ async def _create_indexes() -> None:
     await db.influencers.create_index("campaign_id")
     await db.workflow_runs.create_index("user_id")
     await db.workflow_runs.create_index("campaign_id")
+    await db.gmail_connections.create_index("supabase_user_id", unique=True)
 
     logger.info("MongoDB indexes ensured.")

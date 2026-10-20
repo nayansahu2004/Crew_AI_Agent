@@ -1,0 +1,250 @@
+/* File path: frontend/src/styles/public.css
+   The front page, "How it works" page, and their shared header/footer. */
+
+.public {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.skip-link {
+  position: absolute;
+  top: 0;
+  left: -999px;
+  z-index: 10;
+  padding: 0.5rem 0.75rem;
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.skip-link:focus {
+  top: 0.5rem;
+  left: 0.5rem;
+}
+
+.public-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--rule);
+}
+
+.wordmark {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 500;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.public-header nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+.public-header nav a:not(.btn) {
+  color: var(--ink);
+  font-size: 0.92rem;
+  text-decoration: none;
+}
+
+.public-header nav a:not(.btn):hover,
+.public-header nav a[aria-current="page"] {
+  color: var(--berry);
+}
+
+.public a.btn {
+  text-decoration: none;
+}
+
+.public-main {
+  flex: 1;
+  width: 100%;
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: var(--space-5) var(--space-4);
+}
+
+.public-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--rule);
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+
+.public-footer a {
+  color: var(--ink-soft);
+}
+
+/* --- Front page ------------------------------------------------------ */
+
+.hero h1 {
+  max-width: 17ch;
+  font-size: clamp(2.2rem, 5.5vw, 3.6rem);
+}
+
+.hero-lede {
+  max-width: 40rem;
+  margin-top: var(--space-3);
+  color: var(--ink-soft);
+  font-size: 1.12rem;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.hero-note {
+  margin-top: var(--space-3);
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+}
+
+/* A heading in a narrow left column, content to its right -- an editorial
+   index rather than a stack of identical cards. */
+.pub-section {
+  display: grid;
+  grid-template-columns: 12rem 1fr;
+  gap: var(--space-4);
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--rule);
+}
+
+.pub-section > h2 {
+  font-size: 1.25rem;
+}
+
+.pub-numbered {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pub-numbered > li {
+  display: grid;
+  grid-template-columns: 2.6rem 1fr;
+  gap: var(--space-2);
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--rule);
+}
+
+.pub-numbered > li:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+
+.pub-num {
+  color: var(--berry);
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+}
+
+.pub-where {
+  margin-top: 0.3rem;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+
+.pub-list {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.pub-list li {
+  max-width: 60ch;
+  margin-bottom: var(--space-2);
+}
+
+.pub-faq details {
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--rule);
+}
+
+.pub-faq details:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.pub-faq summary {
+  padding: 0.3rem 0;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.pub-faq details p {
+  margin-top: var(--space-1);
+  color: var(--ink-soft);
+}
+
+.pub-cta {
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--rule);
+}
+
+@media (max-width: 44rem) {
+  .public-header {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .public-main {
+    padding: var(--space-4) var(--space-3);
+  }
+
+  .public-footer {
+    padding: var(--space-3);
+  }
+
+  .pub-section {
+    grid-template-columns: 1fr;
+    gap: var(--space-2);
+  }
+}
+
+/* --- "Out of searches" notice + contact details ---------------------------- */
+
+.notice {
+  padding: var(--space-3);
+  border-left: 2px solid var(--berry);
+  background: var(--paper-raised);
+}
+
+.contact-lines {
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.contact-lines li {
+  margin-bottom: 0.2rem;
+}
+
+.contact-details {
+  display: grid;
+  grid-template-columns: 6rem 1fr;
+  gap: var(--space-2) var(--space-3);
+  margin: 0;
+}
+
+.contact-details dt {
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+}
+
+.contact-details dd {
+  margin: 0;
+}

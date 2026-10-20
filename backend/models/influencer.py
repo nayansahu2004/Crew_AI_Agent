@@ -12,7 +12,7 @@ class InfluencerModel(BaseModel):
     name: str
     username: str | None = None
     platform: str
-    followers: int
+    followers: int | None = None   # None when the search results never said
     category: list[str] = Field(default_factory=list)
     location: str | None = None
     profile_url: str | None = None
@@ -24,5 +24,8 @@ class InfluencerModel(BaseModel):
     review_status: str = "pending"             # pending | reviewed
     outreach_status: str = "not_started"       # not_started | drafted | sent | replied
     email_draft: dict[str, str | None] | None = None   # {"subject", "body"}
+    # Set once the email has been saved to / sent from the user's Gmail:
+    # {draft_id, draft_saved_at, message_id, thread_id, sent_at, sent_from}
+    gmail: dict | None = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)

@@ -54,7 +54,7 @@ export function CampaignCreate() {
   return (
     <div style={{ maxWidth: "34rem" }}>
       <p style={{ marginBottom: "var(--space-3)" }}>
-        <Link to="/" className="muted" style={{ fontSize: "0.88rem" }}>
+        <Link to="/campaigns" className="muted" style={{ fontSize: "0.88rem" }}>
           ← All campaigns
         </Link>
       </p>

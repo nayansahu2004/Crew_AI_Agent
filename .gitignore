@@ -1,41 +1,29 @@
+# File path: .gitignore
+
 # --- Secrets ---
 .env
 .env.*
 !.env.example
 
-# --- Python-generated files ---
-__pycache__/
-*.py[oc]
-*.egg-info/
-build/
-dist/
-wheels/
-
-# --- Virtual environments ---
+# --- Python ---
 .venv/
-venv/
-
-# --- Test / Tool caches ---
+__pycache__/
+*.pyc
+*.pyo
 .pytest_cache/
-.coverage
+*.egg-info/
 .mypy_cache/
 .ruff_cache/
 
 # --- uv ---
-# uv.lock is intentionally NOT ignored.
-# Commit it for reproducible installs.
+# uv.lock is intentionally NOT ignored -- commit it for reproducible installs.
 
 # --- Backend-generated artifacts ---
-# CrewAI run artifacts and application logs.
+# Raw search results and app logs -- don't commit generated/runtime data.
 backend/outputs/*
 !backend/outputs/.gitkeep
-
 backend/logs/*
 !backend/logs/.gitkeep
-
-# --- Logs ---
-*.log
-claude logs.md
 
 # --- Frontend (Node/Vite) ---
 frontend/node_modules/
@@ -44,12 +32,8 @@ frontend/.env
 frontend/.env.*
 !frontend/.env.example
 
-# --- Editor / OS ---
+# --- Editor/OS ---
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
-
-# --- CrewAI local config / cache ---
-# Machine-specific CrewAI configuration.
-.crewai/

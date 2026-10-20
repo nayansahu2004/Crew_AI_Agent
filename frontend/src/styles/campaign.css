@@ -39,6 +39,60 @@
   color: var(--ink-soft);
 }
 
+/* A small pulsing dot beside the stage currently reported as active. */
+.run-step[data-state="active"] .run-step-num::after {
+  content: "";
+  display: inline-block;
+  width: 0.45rem;
+  height: 0.45rem;
+  margin-left: 0.4rem;
+  border-radius: 50%;
+  background: var(--berry);
+  animation: run-pulse 1.2s ease-in-out infinite;
+}
+
+/* Indeterminate progress line shown while the pipeline is working. */
+.run-track {
+  position: relative;
+  height: 2px;
+  margin: 0 0 var(--space-2);
+  overflow: hidden;
+  background: var(--rule);
+}
+
+.run-track::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 35%;
+  background: var(--berry);
+  animation: run-sweep 1.4s ease-in-out infinite;
+}
+
+.spinner {
+  display: inline-block;
+  width: 0.9rem;
+  height: 0.9rem;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* Placeholder rows while the first run is still finding creators. */
+.skeleton {
+  border-radius: 2px;
+  background: linear-gradient(
+    90deg,
+    var(--paper-raised) 25%,
+    #e6dfd3 50%,
+    var(--paper-raised) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
 .influencer-entry {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -103,4 +157,59 @@
   white-space: pre-wrap;
   font-family: var(--font-body);
   font-size: 0.92rem;
+}
+
+@keyframes run-sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(300%);
+  }
+}
+
+@keyframes run-pulse {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* Respect the OS "reduce motion" setting: keep the indicators visible
+   but stop them moving. */
+@media (prefers-reduced-motion: reduce) {
+  .run-track::after {
+    width: 100%;
+    opacity: 0.5;
+    animation: none;
+  }
+
+  .run-step[data-state="active"] .run-step-num::after,
+  .skeleton {
+    animation: none;
+  }
+
+  .spinner {
+    animation-duration: 2.4s;
+  }
 }

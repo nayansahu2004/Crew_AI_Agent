@@ -1,9 +1,14 @@
 # File path: backend/schemas/influencer.py
 """API request/response contracts for the /api/influencers routes."""
 
+import re
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
+
+# No whitespace, quotes, commas, brackets or semicolons -- which also rules out
+# anything that could smuggle extra headers into an outgoing email.
+EMAIL_PATTERN = re.compile(r"^[^\s@<>\",;]+@[^\s@<>\",;]+\.[^\s@<>\",;]+$")
 
 
 class EmailDraft(BaseModel):
@@ -11,13 +16,41 @@ class EmailDraft(BaseModel):
     body: str | None = None
 
 
+class GmailInfo(BaseModel):
+    draft_id: str | None = None
+    draft_saved_at: datetime | None = None
+    message_id: str | None = None
+    thread_id: str | None = None
+    sent_at: datetime | None = None
+    sent_from: str | None = None
+
+
 class InfluencerUpdate(BaseModel):
     """Body for PATCH /api/influencers/{id}. Only the fields a user (or
     the review/outreach stages) would realistically change after
-    discovery -- not the raw discovered data itself."""
+    discovery -- not the raw discovered data itself.
+
+    `email` is the creator's address the outreach email goes to. Send
+    null (or an empty string) to clear it."""
     review_score: float | None = None
     review_status: str | None = None
     outreach_status: str | None = None
+    email: str | None = Field(default=None, max_length=254)
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def _tidy_email(cls, value):
+        if isinstance(value, str):
+            value = value.strip().lower()
+            return value or None
+        return value
+
+    @field_validator("email")
+    @classmethod
+    def _check_email(cls, value):
+        if value is not None and not EMAIL_PATTERN.match(value):
+            raise ValueError("Enter a valid email address")
+        return value
 
 
 class InfluencerResponse(BaseModel):
@@ -47,5 +80,6 @@ class InfluencerResponse(BaseModel):
     review_status: str
     outreach_status: str
     email_draft: EmailDraft | None = None
+    gmail: GmailInfo | None = None
     created_at: datetime
     updated_at: datetime
